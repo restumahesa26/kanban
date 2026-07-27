@@ -172,6 +172,49 @@ export default function Home() {
     }
   };
 
+  // Handle Toggle Subtask item directly from task card
+  const handleToggleSubtask = async (taskId, subtaskId) => {
+    const targetTask = tasks.find((t) => t.id === taskId);
+    if (!targetTask || !Array.isArray(targetTask.subtasks)) return;
+
+    const updatedSubtasks = targetTask.subtasks.map((st) =>
+      st.id === subtaskId ? { ...st, completed: !st.completed } : st
+    );
+
+    const updatedTasks = tasks.map((t) =>
+      t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t
+    );
+
+    if (isFirebaseConfigured) {
+      try {
+        await updateTask(taskId, { subtasks: updatedSubtasks });
+      } catch (err) {
+        console.error("Error updating subtask in Firestore:", err);
+        updateLocalTasks(updatedTasks);
+      }
+    } else {
+      updateLocalTasks(updatedTasks);
+    }
+  };
+
+  // Handle Reorder Subtasks directly on task card or modal
+  const handleReorderSubtasks = async (taskId, newSubtasks) => {
+    const updatedTasks = tasks.map((t) =>
+      t.id === taskId ? { ...t, subtasks: newSubtasks } : t
+    );
+
+    if (isFirebaseConfigured) {
+      try {
+        await updateTask(taskId, { subtasks: newSubtasks });
+      } catch (err) {
+        console.error("Error reordering subtasks in Firestore:", err);
+        updateLocalTasks(updatedTasks);
+      }
+    } else {
+      updateLocalTasks(updatedTasks);
+    }
+  };
+
   // Handle Open Delete Modal
   const handleOpenDeleteModal = (task) => {
     setTaskToDelete(task);
@@ -220,6 +263,8 @@ export default function Home() {
         onAddTask={handleOpenCreateModal}
         onEditTask={handleOpenEditModal}
         onDeleteTask={handleOpenDeleteModal}
+        onToggleSubtask={handleToggleSubtask}
+        onReorderSubtasks={handleReorderSubtasks}
       />
 
       {/* Add / Edit Task Modal */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { 
   Calendar, 
@@ -9,7 +9,11 @@ import {
   ChevronLeft, 
   ChevronRight,
   Clock,
-  AlertCircle
+  ListTodo,
+  CheckSquare,
+  Square,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 const COLUMNS = ["To Do", "On Progress", "On Waiting", "On Review", "Done"];
@@ -19,9 +23,26 @@ export default function TaskCard({
   index, 
   onEdit, 
   onDelete, 
-  onQuickMove 
+  onQuickMove,
+  onToggleSubtask,
+  onReorderSubtasks
 }) {
   const { id, title, description, priority, status, dueDate } = task;
+  const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const completedCount = subtasks.filter((st) => st.completed).length;
+  const progressPercent = subtasks.length > 0 ? Math.round((completedCount / subtasks.length) * 100) : 0;
+
+  const handleMoveSubtask = (stIndex, targetIndex) => {
+    if (targetIndex < 0 || targetIndex >= subtasks.length) return;
+    const updated = Array.from(subtasks);
+    const [moved] = updated.splice(stIndex, 1);
+    updated.splice(targetIndex, 0, moved);
+    if (onReorderSubtasks) {
+      onReorderSubtasks(id, updated);
+    }
+  };
 
   // Priority Styles Mapping
   const priorityStyles = {
@@ -63,7 +84,8 @@ export default function TaskCard({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`group relative bg-slate-800/90 border border-slate-700/80 rounded-xl p-4 transition-all duration-200 hover:border-slate-600 hover:shadow-lg ${
+          onClick={() => onEdit(task)}
+          className={`group relative bg-slate-800/90 border border-slate-700/80 rounded-xl p-4 transition-all duration-200 hover:border-indigo-500/60 hover:shadow-indigo-500/10 hover:shadow-lg cursor-pointer ${
             snapshot.isDragging ? "is-dragging border-indigo-500" : ""
           }`}
         >
@@ -111,6 +133,100 @@ export default function TaskCard({
             <p className="text-xs text-slate-400 line-clamp-3 mb-3 leading-relaxed">
               {description}
             </p>
+          )}
+
+          {/* Subtasks Progress & Interactive Checklist */}
+          {subtasks.length > 0 && (
+            <div className="mb-3 space-y-1.5 bg-slate-900/40 p-2 rounded-lg border border-slate-800">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+                className="w-full flex items-center justify-between text-[11px] font-medium text-slate-400 hover:text-slate-200 transition-colors py-0.5"
+              >
+                <span className="flex items-center gap-1.5">
+                  <ListTodo className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Subtasks ({completedCount}/{subtasks.length})</span>
+                </span>
+                <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                  <span>{progressPercent}%</span>
+                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </span>
+              </button>
+
+              {/* Progress Bar */}
+              <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700/40">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    progressPercent === 100 ? "bg-emerald-500" : "bg-indigo-500"
+                  }`}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+
+              {/* Expandable Subtask Checklist */}
+              {isExpanded && (
+                <div className="mt-2 space-y-1 max-h-36 overflow-y-auto pt-1 border-t border-slate-800">
+                  {subtasks.map((st, idx) => (
+                    <div
+                      key={st.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onToggleSubtask) onToggleSubtask(id, st.id);
+                      }}
+                      className="flex items-center justify-between gap-2 p-1 rounded hover:bg-slate-800/90 cursor-pointer transition-colors group/item"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {st.completed ? (
+                          <CheckSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        ) : (
+                          <Square className="w-3.5 h-3.5 text-slate-500 group-hover/item:text-indigo-400 shrink-0" />
+                        )}
+                        <span
+                          className={`text-[11px] truncate leading-tight ${
+                            st.completed ? "line-through text-slate-500" : "text-slate-200"
+                          }`}
+                        >
+                          {st.text}
+                        </span>
+                      </div>
+                      {subtasks.length > 1 && (
+                        <div className="flex items-center gap-0.5 opacity-60 group-hover/item:opacity-100 transition-opacity shrink-0">
+                          {idx > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveSubtask(idx, idx - 1);
+                              }}
+                              className="p-0.5 text-slate-400 hover:text-indigo-300 rounded hover:bg-slate-700/60"
+                              title="Move Up"
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                            </button>
+                          )}
+                          {idx < subtasks.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveSubtask(idx, idx + 1);
+                              }}
+                              className="p-0.5 text-slate-400 hover:text-indigo-300 rounded hover:bg-slate-700/60"
+                              title="Move Down"
+                            >
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Footer: Due Date & Quick Status Controls */}

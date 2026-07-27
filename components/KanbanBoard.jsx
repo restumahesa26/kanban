@@ -12,7 +12,9 @@ export default function KanbanBoard({
   onStatusChange, 
   onAddTask, 
   onEditTask, 
-  onDeleteTask 
+  onDeleteTask,
+  onToggleSubtask,
+  onReorderSubtasks
 }) {
   // Prevent SSR hydration mismatch for DnD
   const [isMounted, setIsMounted] = useState(false);
@@ -62,6 +64,8 @@ export default function KanbanBoard({
               onEditTask={onEditTask}
               onDeleteTask={onDeleteTask}
               onQuickMove={onStatusChange}
+              onToggleSubtask={onToggleSubtask}
+              onReorderSubtasks={onReorderSubtasks}
             />
           );
         })}

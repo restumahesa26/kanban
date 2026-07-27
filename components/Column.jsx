@@ -5,14 +5,16 @@ import { Droppable } from "@hello-pangea/dnd";
 import TaskCard from "./TaskCard";
 import { PlusCircle, CircleDashed, Clock, CheckCircle2, Eye, Hourglass } from "lucide-react";
 
-export default function Column({ 
-  status, 
-  tasks, 
+export default function Column({
+  status,
+  tasks,
   isLoading,
-  onAddTask, 
-  onEditTask, 
-  onDeleteTask, 
-  onQuickMove 
+  onAddTask,
+  onEditTask,
+  onDeleteTask,
+  onQuickMove,
+  onToggleSubtask,
+  onReorderSubtasks
 }) {
   // Config per status
   const columnConfig = {
@@ -88,11 +90,10 @@ export default function Column({
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 flex flex-col gap-3 min-h-[320px] p-1.5 rounded-xl transition-colors ${
-              snapshot.isDraggingOver
-                ? "bg-slate-800/50 ring-2 ring-indigo-500/40 ring-dashed"
-                : ""
-            }`}
+            className={`flex-1 flex flex-col gap-3 min-h-[320px] p-1.5 rounded-xl transition-colors ${snapshot.isDraggingOver
+              ? "bg-slate-800/50 ring-2 ring-indigo-500/40 ring-dashed"
+              : ""
+              }`}
           >
             {isLoading ? (
               <div className="space-y-3 p-1 animate-fade-in">
@@ -136,6 +137,8 @@ export default function Column({
                   onEdit={onEditTask}
                   onDelete={onDeleteTask}
                   onQuickMove={onQuickMove}
+                  onToggleSubtask={onToggleSubtask}
+                  onReorderSubtasks={onReorderSubtasks}
                 />
               ))
             )}
